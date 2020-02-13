@@ -93,9 +93,9 @@ pub fn routes() -> Vec<(&'static str, Vec<rocket::Route>)> {
                 route::registration::register,
                 // resource
                 route::access_token::preflight::generate,
-                route::access_token::preflight::list,
+                route::access_token::preflight::lrange,
                 route::access_token::generate,
-                route::access_token::list,
+                route::access_token::lrange,
                 route::message::preflight::add,
                 route::message::preflight::lrange,
                 route::message::preflight::put,

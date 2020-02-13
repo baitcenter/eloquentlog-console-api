@@ -5,7 +5,7 @@ use rocket_slog::SyncLogger;
 
 use crate::config::Config;
 use crate::db::DbConn;
-use crate::model::access_token::{AccessToken};
+use crate::model::access_token::{AccessToken, AgentType};
 use crate::model::token::{AuthenticationClaims, Claims, TokenData};
 use crate::model::user::User;
 use crate::response::Response;
@@ -19,8 +19,8 @@ pub mod preflight {
         no_content_for("GET")
     }
 
-    #[options("/access_token/list")]
-    pub fn list<'a>() -> RawResponse<'a> {
+    #[options("/access_token/lrange")]
+    pub fn lrange<'a>() -> RawResponse<'a> {
         no_content_for("GET")
     }
 }
@@ -73,8 +73,48 @@ pub fn generate<'a>(
     }
 }
 
-#[get("/access_token/list")]
-pub fn list<'a>(
+#[get("/access_token/hgetall/<key>")]
+pub fn hgetall<'a>(
+    key: AgentType,
+    user: &User,
+    conn: DbConn,
+    _config: State<Config>,
+    logger: SyncLogger,
+) -> Response<'a>
+{
+    let res: Response = Default::default();
+
+    info!(logger, "user: {}", user.uuid);
+    info!(logger, "key: {}", key);
+
+    if key != AgentType::Person {
+        return res;
+    }
+
+    match AccessToken::find_personal_token_by_user_id(user.id, &conn, &logger) {
+        None => {
+            error!(logger, "err: not found user.id {}", user.uuid);
+            res.status(Status::NotFound)
+        },
+        Some(t) => {
+            // UUID?
+            res.format(json!({"access_token": [
+            t.name,
+            {
+                "name": t.name,
+                "revoked_at": t.revoked_at,
+                "created_at": t.created_at,
+                "updated_at": t.updated_at,
+            }]}))
+        },
+    }
+}
+
+#[get("/access_token/lrange/<key>/<start>/<stop>")]
+pub fn lrange<'a>(
+    key: AgentType,
+    start: i64,
+    stop: i64,
     user: &User,
     _conn: DbConn,
     _config: State<Config>,
@@ -84,6 +124,12 @@ pub fn list<'a>(
     let res: Response = Default::default();
 
     info!(logger, "user: {}", user.uuid);
+    info!(logger, "key: {}, start: {}, stop: {}", key, start, stop);
 
+    if key != AgentType::Person {
+        return res;
+    }
+
+    // TODO
     res
 }

@@ -8,7 +8,7 @@ use eloquentlog_console_api::model;
 use crate::{minify, run_test, load_user, make_raw_password, USERS};
 
 #[test]
-fn test_access_token_generate_failure() {
+fn test_personal_token_lpop_failure() {
     run_test(|client, conn, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
@@ -31,7 +31,7 @@ fn test_access_token_generate_failure() {
         let authorization_token = result["token"].as_str().unwrap();
 
         let res = client
-            .get("/_api/access_token/generate")
+            .patch("/_api/access_token/lpop/person")
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new(
                 "Authorization",
@@ -44,7 +44,7 @@ fn test_access_token_generate_failure() {
 }
 
 #[test]
-fn test_access_token_generate() {
+fn test_personal_token_lpop() {
     run_test(|client, conn, _, _| {
         let u = USERS.get("oswald").unwrap().clone();
         let password = make_raw_password(&u);
@@ -74,7 +74,7 @@ fn test_access_token_generate() {
             agent_type: model::access_token::AgentType::Person,
             name: "name".to_string(),
             token: Some(model::access_token::AccessToken::generate_token()),
-            state: model::access_token::AccessTokenState::Enabled,
+            state: model::access_token::AccessTokenState::Disabled,
             revoked_at: None,
             created_at: dt.naive_utc(),
             updated_at: dt.naive_utc(),
@@ -88,7 +88,7 @@ fn test_access_token_generate() {
                 .unwrap_or_else(|_| panic!("Error inserting: {}", t));
 
         let mut res = client
-            .get("/_api/access_token/generate")
+            .patch("/_api/access_token/lpop/person")
             .header(Header::new("X-Requested-With", "XMLHttpRequest"))
             .header(Header::new(
                 "Authorization",
